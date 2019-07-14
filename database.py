@@ -24,7 +24,7 @@ class Database(object):
             '5th Most important class taken': 'Past Class 5',
             'Grade received for 5th most important class': 'Grade Class 5',
         }
-        self.df = pd.read_csv(csv).replace(np.nan, '', regex=True).rename(self.static, axis='columns')
+        self.df = pd.read_csv(csv).replace((np.nan, 'None'), '', regex=True).rename(self.static, axis='columns')
         self.df['Current Classes'] = self.df['Current Classes'].str.upper()
         self.df['Past Class 1'] = self.df['Past Class 1'].str.upper()
         self.df['Past Class 2'] = self.df['Past Class 2'].str.upper()
@@ -42,9 +42,17 @@ class Database(object):
     def major_name(self):
         """
             Idea is to return Major (including Major 2, Major 3) as Index and list of names as Value
-        :return: pd Series
+        :return: pd Dataframe
         """
-        pass
+        uq_majors = [e for e in pd.unique(self.df[['Major', 'Major 2', 'Major 3']].values.ravel('K')).tolist()
+                     if e not in ('None', '')]
+        major = {k: [] for k in uq_majors}
+        for uq_major in uq_majors:
+            major[uq_major].extend(self.df.loc[self.df['Major'] == uq_major, ['Name']].values.flatten().tolist())
+            major[uq_major].extend(self.df.loc[self.df['Major 2'] == uq_major, ['Name']].values.flatten().tolist())
+            major[uq_major].extend(self.df.loc[self.df['Major 3'] == uq_major, ['Name']].values.flatten().tolist())
+
+        return pd.DataFrame.from_dict(major, orient='index')
 
     def past_classes(self):
         """
@@ -74,13 +82,14 @@ class Database(object):
 
 
 def main():
-    csv = sys.argv[0] or 'KDR Scholarship Fall 2019.csv'
+    csv = 'KDR Scholarship Fall 2019.csv' or sys.argv[0]
     db = Database(csv)
     print(db.brother_info())
     print('--------------------------------')
     print(db.current_classes())
     print('--------------------------------')
-
+    print(db.major_name())
+    print('--------------------------------')
 
 
 if __name__ == '__main__':
