@@ -2,10 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-
-class Database(object):
-    def __init__(self, csv=None):
-        self.static = {
+column_mapping = {
             'What is your name?': 'Name',
             'What year are you in?': 'Year',
             'What is your major?': 'Major',
@@ -23,9 +20,16 @@ class Database(object):
             'Grade received for 4th most important class': 'Grade Class 4',
             '5th Most important class taken': 'Past Class 5',
             'Grade received for 5th most important class': 'Grade Class 5',
-        }
+}
+grade = {
+    'A+': 1, 'A': 2, 'A-': 3, 'B+': 4, 'B': 5, 'B-': 6,
+    'C+': 7, 'C': 8, 'C-': 9, 'D or lower': 10
+}
 
-        self.df = pd.read_csv(csv, na_filter=False).rename(self.static, axis='columns')
+
+class Database(object):
+    def __init__(self, csv=None):
+        self.df = pd.read_csv(csv, na_filter=False).rename(column_mapping, axis='columns')
         self.df['Class #1'] = self.df['Class #1'].str.upper()
         self.df['Class #2'] = self.df['Class #2'].str.upper()
         self.df['Class #3'] = self.df['Class #3'].str.upper()
@@ -52,14 +56,14 @@ class Database(object):
         :return: pd Dataframe
         """
         uq_majors = [e for e in pd.unique(self.df[['Major', 'Major 2', 'Major 3']].values.ravel('K')).tolist()
-                     if e not in ('None', '')]
+                     if e not in '']
         major = {k: [] for k in uq_majors}
         for uq_major in uq_majors:
             major[uq_major].extend(self.df.loc[self.df['Major'] == uq_major, ['Name']].values.flatten().tolist())
             major[uq_major].extend(self.df.loc[self.df['Major 2'] == uq_major, ['Name']].values.flatten().tolist())
             major[uq_major].extend(self.df.loc[self.df['Major 3'] == uq_major, ['Name']].values.flatten().tolist())
 
-        df = pd.DataFrame.from_dict(major, orient='index').sort_index()
+        df = pd.DataFrame.from_dict(major, orient='index').sort_index().replace(np.nan, '')
         df.index.name = 'Major'
         return df
 
@@ -68,6 +72,9 @@ class Database(object):
             Idea is to return Past classes (all 5 past classes) as Index, and list of names as value sorted by higher grades received
         :return: pd Dataframe
         """
+        past_classes = [p for p in pd.unique(self.df[['Past Class 1', 'Past Class 2', 'Past Class 3', 'Past Class 4',
+                                                      'Past Class 5']].values.ravel('K')).tolist()
+                        if p not in '']
         pass
 
     def current_classes(self):
@@ -87,7 +94,8 @@ class Database(object):
             classes[uq_class].extend(self.df.loc[self.df['Class #5'] == uq_class, ['Name']].values.flatten().tolist())
             classes[uq_class].extend(self.df.loc[self.df['Class #6'] == uq_class, ['Name']].values.flatten().tolist())
             classes[uq_class].extend(self.df.loc[self.df['Class #7'] == uq_class, ['Name']].values.flatten().tolist())
-        df = pd.DataFrame.from_dict(classes, orient='index').sort_index()
+            classes[uq_class] = sorted(classes[uq_class])
+        df = pd.DataFrame.from_dict(classes, orient='index').sort_index().replace(np.nan, '')
         df.index.name = 'Course'
         return df
 
@@ -101,7 +109,8 @@ def main():
     print('--------------------------------')
     print(db.current_classes())
     print('--------------------------------')
-
+    print(db.past_classes())
+    print('--------------------------------')
 
 
 if __name__ == '__main__':
