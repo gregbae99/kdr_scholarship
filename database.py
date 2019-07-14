@@ -59,19 +59,21 @@ class Database(object):
             major[uq_major].extend(self.df.loc[self.df['Major 2'] == uq_major, ['Name']].values.flatten().tolist())
             major[uq_major].extend(self.df.loc[self.df['Major 3'] == uq_major, ['Name']].values.flatten().tolist())
 
-        return pd.DataFrame.from_dict(major, orient='index').sort_index()
+        df = pd.DataFrame.from_dict(major, orient='index').sort_index()
+        df.index.name = 'Major'
+        return df
 
     def past_classes(self):
         """
             Idea is to return Past classes (all 5 past classes) as Index, and list of names as value sorted by higher grades received
-        :return: pd Series
+        :return: pd Dataframe
         """
         pass
 
     def current_classes(self):
         """
 
-        :return: a pd Series with classes as index and a string of names concatenated with ', ' as value
+        :return: a pd Dataframe with Course as index column and dynamically sized value columns that contain student names
         """
         uq_classes = [c for c in pd.unique(self.df[['Class #1', 'Class #2', 'Class #3', 'Class #4', 'Class #5',
                                                     'Class #6', 'Class #7']].values.ravel('K')).tolist()
@@ -85,7 +87,9 @@ class Database(object):
             classes[uq_class].extend(self.df.loc[self.df['Class #5'] == uq_class, ['Name']].values.flatten().tolist())
             classes[uq_class].extend(self.df.loc[self.df['Class #6'] == uq_class, ['Name']].values.flatten().tolist())
             classes[uq_class].extend(self.df.loc[self.df['Class #7'] == uq_class, ['Name']].values.flatten().tolist())
-        return pd.DataFrame.from_dict(classes, orient='index').sort_index()
+        df = pd.DataFrame.from_dict(classes, orient='index').sort_index()
+        df.index.name = 'Course'
+        return df
 
 
 def main():
@@ -93,10 +97,11 @@ def main():
     db = Database(csv)
     print(db.brother_info())
     print('--------------------------------')
-    print(db.current_classes())
-    print('--------------------------------')
     print(db.major_name())
     print('--------------------------------')
+    print(db.current_classes())
+    print('--------------------------------')
+
 
 
 if __name__ == '__main__':
