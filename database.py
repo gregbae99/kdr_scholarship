@@ -24,8 +24,15 @@ class Database(object):
             '5th Most important class taken': 'Past Class 5',
             'Grade received for 5th most important class': 'Grade Class 5',
         }
-        self.df = pd.read_csv(csv).replace((np.nan, 'None'), '', regex=True).rename(self.static, axis='columns')
-        self.df['Current Classes'] = self.df['Current Classes'].str.upper()
+
+        self.df = pd.read_csv(csv, na_filter=False).rename(self.static, axis='columns')
+        self.df['Class #1'] = self.df['Class #1'].str.upper()
+        self.df['Class #2'] = self.df['Class #2'].str.upper()
+        self.df['Class #3'] = self.df['Class #3'].str.upper()
+        self.df['Class #4'] = self.df['Class #4'].str.upper()
+        self.df['Class #5'] = self.df['Class #5'].str.upper()
+        self.df['Class #6'] = self.df['Class #6'].str.upper()
+        self.df['Class #7'] = self.df['Class #7'].str.upper()
         self.df['Past Class 1'] = self.df['Past Class 1'].str.upper()
         self.df['Past Class 2'] = self.df['Past Class 2'].str.upper()
         self.df['Past Class 3'] = self.df['Past Class 3'].str.upper()
@@ -37,7 +44,7 @@ class Database(object):
 
         :return: Name as Index and Year, Major, Major 2, Major 3, Minor as columns
         """
-        return self.df[['Name', 'Year', 'Major', 'Major 2', 'Major 3', 'Minor']].set_index('Name')
+        return self.df[['Name', 'Year', 'Major', 'Major 2', 'Major 3', 'Minor']].set_index('Name').sort_index()
 
     def major_name(self):
         """
@@ -52,7 +59,7 @@ class Database(object):
             major[uq_major].extend(self.df.loc[self.df['Major 2'] == uq_major, ['Name']].values.flatten().tolist())
             major[uq_major].extend(self.df.loc[self.df['Major 3'] == uq_major, ['Name']].values.flatten().tolist())
 
-        return pd.DataFrame.from_dict(major, orient='index')
+        return pd.DataFrame.from_dict(major, orient='index').sort_index()
 
     def past_classes(self):
         """
@@ -66,19 +73,19 @@ class Database(object):
 
         :return: a pd Series with classes as index and a string of names concatenated with ', ' as value
         """
-        current = {}
-        class_df = self.df[['Name', 'Current Classes']].set_index('Name').to_dict()
-        for key, value in class_df.items():
-            for name, classes in value.items():
-                for e_class in classes.split(','):
-                    if e_class not in current:
-                        current[e_class] = [name]
-                    else:
-                        current[e_class].append(name)
-
-        for key, value in current.items():
-            current[key] = ', '.join(value)
-        return pd.Series(current)
+        uq_classes = [c for c in pd.unique(self.df[['Class #1', 'Class #2', 'Class #3', 'Class #4', 'Class #5',
+                                                    'Class #6', 'Class #7']].values.ravel('K')).tolist()
+                      if c not in ('None', '')]
+        classes = {k: [] for k in uq_classes}
+        for uq_class in uq_classes:
+            classes[uq_class].extend(self.df.loc[self.df['Class #1'] == uq_class, ['Name']].values.flatten().tolist())
+            classes[uq_class].extend(self.df.loc[self.df['Class #2'] == uq_class, ['Name']].values.flatten().tolist())
+            classes[uq_class].extend(self.df.loc[self.df['Class #3'] == uq_class, ['Name']].values.flatten().tolist())
+            classes[uq_class].extend(self.df.loc[self.df['Class #4'] == uq_class, ['Name']].values.flatten().tolist())
+            classes[uq_class].extend(self.df.loc[self.df['Class #5'] == uq_class, ['Name']].values.flatten().tolist())
+            classes[uq_class].extend(self.df.loc[self.df['Class #6'] == uq_class, ['Name']].values.flatten().tolist())
+            classes[uq_class].extend(self.df.loc[self.df['Class #7'] == uq_class, ['Name']].values.flatten().tolist())
+        return pd.DataFrame.from_dict(classes, orient='index').sort_index()
 
 
 def main():
