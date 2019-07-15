@@ -75,7 +75,28 @@ class Database(object):
         past_classes = [p for p in pd.unique(self.df[['Past Class 1', 'Past Class 2', 'Past Class 3', 'Past Class 4',
                                                       'Past Class 5']].values.ravel('K')).tolist()
                         if p not in '']
-        pass
+        classes = {k: [] for k in past_classes}
+        brother_priority = {k: {} for k in past_classes}
+        for past_class in past_classes:
+            classes[past_class].extend(self.df.loc[self.df['Past Class 1'] == past_class, ['Name']].values.flatten().tolist())
+            classes[past_class].extend(self.df.loc[self.df['Past Class 2'] == past_class, ['Name']].values.flatten().tolist())
+            classes[past_class].extend(self.df.loc[self.df['Past Class 3'] == past_class, ['Name']].values.flatten().tolist())
+            classes[past_class].extend(self.df.loc[self.df['Past Class 4'] == past_class, ['Name']].values.flatten().tolist())
+            classes[past_class].extend(self.df.loc[self.df['Past Class 5'] == past_class, ['Name']].values.flatten().tolist())
+            for index, row in self.df.loc[self.df['Past Class 1'] == past_class, ['Name', 'Grade Class 1']].iterrows():
+                brother_priority[past_class].update({row['Name']: row['Grade Class 1']})
+            for index, row in self.df.loc[self.df['Past Class 2'] == past_class, ['Name', 'Grade Class 2']].iterrows():
+                brother_priority[past_class].update({row['Name']: row['Grade Class 2']})
+            for index, row in self.df.loc[self.df['Past Class 3'] == past_class, ['Name', 'Grade Class 3']].iterrows():
+                brother_priority[past_class].update({row['Name']: row['Grade Class 3']})
+            for index, row in self.df.loc[self.df['Past Class 4'] == past_class, ['Name', 'Grade Class 4']].iterrows():
+                brother_priority[past_class].update({row['Name']: row['Grade Class 4']})
+            for index, row in self.df.loc[self.df['Past Class 5'] == past_class, ['Name', 'Grade Class 5']].iterrows():
+                brother_priority[past_class].update({row['Name']: row['Grade Class 5']})
+            classes[past_class] = sorted(classes[past_class], key=lambda x: grade[brother_priority[past_class][x]])
+        df = pd.DataFrame.from_dict(classes, orient='index').replace(np.nan, '')
+        df.index.name = 'Past Courses'
+        return df
 
     def current_classes(self):
         """
@@ -84,7 +105,7 @@ class Database(object):
         """
         uq_classes = [c for c in pd.unique(self.df[['Class #1', 'Class #2', 'Class #3', 'Class #4', 'Class #5',
                                                     'Class #6', 'Class #7']].values.ravel('K')).tolist()
-                      if c not in ('None', '')]
+                      if c not in '']
         classes = {k: [] for k in uq_classes}
         for uq_class in uq_classes:
             classes[uq_class].extend(self.df.loc[self.df['Class #1'] == uq_class, ['Name']].values.flatten().tolist())
@@ -103,14 +124,16 @@ class Database(object):
 def main():
     csv = 'KDR Scholarship Fall 2019.csv' or sys.argv[0]
     db = Database(csv)
-    print(db.brother_info())
-    print('--------------------------------')
-    print(db.major_name())
-    print('--------------------------------')
-    print(db.current_classes())
-    print('--------------------------------')
-    print(db.past_classes())
-    print('--------------------------------')
+    db.brother_info().to_excel('KDR Database Fall 2019.xlsx', sheet_name='General Information')
+    db.major_name().to_excel('KDR Database Fall 2019.xlsx', sheet_name='Brother Information - Field of Study')
+    db.current_classes().to_excel('KDR Database Fall 2019.xlsx', sheet_name='Brother Information - Fall 2019 Courses')
+    db.past_classes().to_excel('KDR Database Fall 2019.xlsx', sheet_name='Brother Information - Completed Courses')
+
+    with pd.ExcelWriter('KDR Database Fall 2019.xlsx') as writer:
+        db.brother_info().to_excel(writer, sheet_name='General Info')
+        db.major_name().to_excel(writer, sheet_name='Field of Study')
+        db.current_classes().to_excel(writer, sheet_name='Fall 2019 Courses')
+        db.past_classes().to_excel(writer, sheet_name='Completed Courses')
 
 
 if __name__ == '__main__':
